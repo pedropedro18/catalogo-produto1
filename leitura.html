@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Treino de Leitura</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--tx:#1d1d1b;--mut:#6b6b66;--ac:#2563eb;--ok:#15803d;--bad:#b91c1c;--bd:#e3e3df;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161617;--card:#212123;--tx:#f0f0ee;--mut:#9a9a95;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171;--bd:#33333a}}
+:root[data-theme="dark"]{--bg:#161617;--card:#212123;--tx:#f0f0ee;--mut:#9a9a95;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171;--bd:#33333a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:8px 0 14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:10px 14px;border-radius:10px;cursor:pointer}
+button.on,button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+button.mic{width:100%;padding:16px;font-size:19px}
+textarea{width:100%;box-sizing:border-box;min-height:90px;font:inherit;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:10px}
+.sent{font-size:21px;line-height:1.7}
+.sent span{padding:0 2px;border-radius:4px}
+.ok{color:var(--ok)}.bad{color:var(--bad);text-decoration:underline wavy}
+.mut{color:var(--mut);font-size:15px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>🎤 Treino de Leitura</h1>
+
+<div id="setup" class="card">
+  <div class="mut" style="margin-bottom:8px">Idioma</div>
+  <div class="row" id="langs">
+    <button data-l="pt-BR" class="on">Português</button>
+    <button data-l="en-US">English</button>
+    <button data-l="fr-FR">Français</button>
+  </div>
+  <div class="mut" style="margin:14px 0 6px">Texto (pode colar o seu)</div>
+  <textarea id="txt"></textarea>
+  <button class="pri" id="start" style="margin-top:12px;width:100%">Começar</button>
+</div>
+
+<div id="play" class="card hide">
+  <div class="mut" id="prog"></div>
+  <div class="sent" id="sent"></div>
+  <div class="row" style="margin:10px 0">
+    <button id="say">🔊 Ouvir frase</button>
+    <button id="skip">Pular</button>
+  </div>
+  <button class="mic pri" id="mic">🎤 Ler agora</button>
+  <div id="res" style="margin-top:12px"></div>
+</div>
+
+<div id="end" class="card hide">
+  <div id="score" style="font-size:20px"></div>
+  <button class="pri" id="again" style="margin-top:12px">Recomeçar</button>
+</div>
+</main>
+
+<script>
+const SAMPLES={
+ "pt-BR":"O sol nasceu cedo naquela manhã. As crianças correram para o jardim. Havia flores de todas as cores.",
+ "en-US":"The sun rose early that morning. The children ran into the garden. There were flowers of every color.",
+ "fr-FR":"Le soleil s'est levé tôt ce matin-là. Les enfants ont couru dans le jardin. Il y avait des fleurs de toutes les couleurs."
+};
+const MSG={
+ "pt-BR":{ok:"✅ Perfeito!",extra:"Palavras a mais: ",miss:"Em vermelho: palavras erradas ou esquecidas.",heard:"Ouvi: ",none:"Não entendi. Tente de novo.",right:"Acertou de primeira: "},
+ "en-US":{ok:"✅ Perfect!",extra:"Extra words: ",miss:"In red: wrong or missed words.",heard:"I heard: ",none:"I didn't catch that. Try again.",right:"Right on first try: "},
+ "fr-FR":{ok:"✅ Parfait !",extra:"Mots en trop : ",miss:"En rouge : mots faux ou oubliés.",heard:"J'ai entendu : ",none:"Je n'ai pas compris. Réessayez.",right:"Juste du premier coup : "}
+};
+const $=id=>document.getElementById(id);
+let lang="pt-BR",frases=[],i=0,acertos=0,tentou=false;
+
+const palavras=s=>(s.toLowerCase().match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu)||[]);
+const norm=w=>w.replace(/’/g,"'");
+
+function comparar(esp,ouv){
+  const a=esp.map(norm),b=ouv.map(norm),n=a.length,m=b.length;
+  const d=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+  for(let x=n-1;x>=0;x--)for(let y=m-1;y>=0;y--)
+    d[x][y]=a[x]===b[y]?d[x+1][y+1]+1:Math.max(d[x+1][y],d[x][y+1]);
+  const okA=new Array(n).fill(false),okB=new Array(m).fill(false);
+  let x=0,y=0;
+  while(x<n&&y<m){
+    if(a[x]===b[y]){okA[x]=okB[y]=true;x++;y++}
+    else if(d[x+1][y]>=d[x][y+1])x++;else y++;
+  }
+  return {okA,extras:ouv.filter((_,k)=>!okB[k])};
+}
+
+function setLang(l){
+  lang=l;
+  document.querySelectorAll("#langs button").forEach(b=>b.classList.toggle("on",b.dataset.l===l));
+  $("txt").value=SAMPLES[l];
+  document.documentElement.lang=l;
+}
+document.querySelectorAll("#langs button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
+setLang("pt-BR");
+
+function show(){
+  if(i>=frases.length){
+    $("play").classList.add("hide");$("end").classList.remove("hide");
+    $("score").textContent=MSG[lang].right+acertos+"/"+frases.length;return;
+  }
+  tentou=false;
+  $("prog").textContent=(i+1)+" / "+frases.length;
+  $("sent").textContent=frases[i];
+  $("res").innerHTML="";
+}
+$("start").onclick=()=>{
+  frases=$("txt").value.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+  if(!frases.length)return;
+  i=0;acertos=0;
+  $("setup").classList.add("hide");$("play").classList.remove("hide");show();
+};
+$("again").onclick=()=>{$("end").classList.add("hide");$("setup").classList.remove("hide")};
+$("skip").onclick=()=>{i++;show()};
+$("say").onclick=()=>{
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(frases[i]);u.lang=lang;speechSynthesis.speak(u)}catch(e){}
+};
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$("mic").onclick=()=>{
+  if(!SR){$("res").textContent="Seu navegador não suporta reconhecimento de voz. Use o Chrome ou o Edge.";return}
+  const r=new SR();r.lang=lang;r.interimResults=false;r.maxAlternatives=1;
+  $("mic").textContent="🎙️ Ouvindo...";
+  r.onresult=e=>avaliar(e.results[0][0].transcript);
+  r.onerror=e=>{$("res").textContent=(e.error==="not-allowed")?"Permita o uso do microfone no navegador.":MSG[lang].none};
+  r.onend=()=>{$("mic").textContent="🎤 Ler agora"};
+  try{r.start()}catch(e){}
+};
+
+function avaliar(ouvido){
+  const M=MSG[lang];
+  const esp=frases[i].split(/\s+/);
+  const alvo=palavras(frases[i]);
+  const {okA,extras}=comparar(alvo,palavras(ouvido));
+  let k=0;
+  const html=esp.map(w=>{
+    const n=palavras(w).length;
+    if(!n)return w;
+    let good=true;for(let j=0;j<n;j++)if(!okA[k+j])good=false;
+    k+=n;
+    return '<span class="'+(good?"ok":"bad")+'">'+w.replace(/</g,"&lt;")+'</span>';
+  }).join(" ");
+  const perfeito=okA.every(Boolean)&&!extras.length;
+  $("sent").innerHTML=html;
+  let out='<div class="mut">'+M.heard+ouvido.replace(/</g,"&lt;")+'</div>';
+  if(perfeito){
+    if(!tentou)acertos++;
+    out+='<div class="ok" style="margin:6px 0">'+M.ok+'</div><button class="pri" id="next">→</button>';
+  }else{
+    tentou=true;
+    out+='<div class="mut" style="margin-top:6px">'+M.miss+'</div>';
+    if(extras.length)out+='<div class="mut">'+M.extra+extras.join(", ")+'</div>';
+  }
+  $("res").innerHTML=out;
+  const nx=$("next");if(nx)nx.onclick=()=>{i++;show()};
+}
+</script>
+</body>
+</html>
