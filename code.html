@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aulas de programação e websites | Teacher Pedro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="catalogo.css">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Aprende a programar e a publicar o teu site</h1>
+    <p>Escolhe a aula, o nível e a duração que te servem. Cada aula acaba com algo teu a funcionar.</p>
+    <div class="filtros" role="search">
+      <div><label for="categoria">Categoria</label><select id="categoria"></select></div>
+      <div><label for="nivel">Nível</label><select id="nivel"></select></div>
+      <div class="busca"><label for="pesquisa">Pesquisar aula</label><input id="pesquisa" type="search" placeholder="Ex.: Python, HTML, MySQL"></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <p id="contagem" aria-live="polite"></p>
+  <div id="grelha" class="grelha"></div>
+</main>
+
+<footer>
+  <div class="wrap">Teacher Pedro &middot; Aulas de programação e criação de websites</div>
+</footer>
+
+<script>
+/* ====== EDITA AQUI ======
+   WHATSAPP: número com indicativo, sem + nem espaços (ex.: "923030010").
+   AULAS: acrescenta, apaga ou muda as aulas. */
+const WHATSAPP = "923030010";
+
+const AULAS = [
+  {titulo:"Python do zero", descricao:"Variáveis, ciclos, funções e primeiros programas.", categoria:"Python", nivel:"Iniciante", duracao:"4 semanas"},
+  {titulo:"HTML e CSS", descricao:"Cria o teu primeiro website, página a página.", categoria:"Web", nivel:"Iniciante", duracao:"4 semanas"},
+  {titulo:"JavaScript para a web", descricao:"Dá vida ao site com botões, filtros e formulários.", categoria:"Web", nivel:"Intermédio", duracao:"6 semanas"},
+  {titulo:"MySQL básico", descricao:"Tabelas, SELECT e INSERT para guardar os teus dados.", categoria:"Bases de dados", nivel:"Intermédio", duracao:"4 semanas"},
+  {titulo:"Apps com Streamlit", descricao:"Transforma um script Python numa app online.", categoria:"Python", nivel:"Intermédio", duracao:"3 semanas"},
+  {titulo:"Publicar o teu site", descricao:"Git, GitHub e Vercel: do teu PC para um link público.", categoria:"Web", nivel:"Iniciante", duracao:"2 semanas"}
+];
+
+const CORES = {"Python":"var(--python)","Web":"var(--web)","Bases de dados":"var(--db)","JavaScript":"var(--js)"};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const unicos = k => [...new Set(AULAS.map(a => a[k]).filter(Boolean))].sort();
+
+function preencher(sel, todos, valores){
+  $(sel).innerHTML = [todos, ...valores].map((v,i) => `<option value="${i?esc(v):""}">${esc(v)}</option>`).join("");
+}
+preencher("categoria","Todas",unicos("categoria"));
+preencher("nivel","Todos",unicos("nivel"));
+
+function ligacao(aula){
+  const msg = encodeURIComponent("Olá! Tenho interesse na aula: " + aula.titulo);
+  return WHATSAPP ? `https://wa.me/${WHATSAPP}?text=${msg}` : "#";
+}
+
+function cartao(a){
+  const cor = CORES[a.categoria] || "var(--outro)";
+  const href = ligacao(a);
+  const alvo = WHATSAPP ? ' target="_blank" rel="noopener"' : "";
+  return `<article class="aula">
+    <div class="topo" style="--cor:${cor}">
+      <span class="tag">${esc(a.categoria)}</span>
+      <h2>${esc(a.titulo)}</h2>
+    </div>
+    <div class="corpo">
+      <p>${esc(a.descricao)}</p>
+      <div class="meta">
+        <span><b>Nível</b>${esc(a.nivel)}</span>
+        <span><b>Duração</b>${esc(a.duracao)}</span>
+      </div>
+      <a class="btn" href="${href}"${alvo}>Quero esta aula</a>
+    </div>
+  </article>`;
+}
+
+function mostrar(){
+  const cat = $("categoria").value, niv = $("nivel").value;
+  const q = $("pesquisa").value.trim().toLowerCase();
+  const lista = AULAS.filter(a =>
+    (!cat || a.categoria === cat) &&
+    (!niv || a.nivel === niv) &&
+    (!q || (a.titulo + " " + a.descricao).toLowerCase().includes(q))
+  );
+  $("contagem").textContent = lista.length === 1 ? "1 aula encontrada" : lista.length + " aulas encontradas";
+  $("grelha").innerHTML = lista.length ? lista.map(cartao).join("") :
+    `<div class="vazio">Nenhuma aula encontrada. Limpa a pesquisa ou muda os filtros.<br><button type="button" id="limpar">Limpar filtros</button></div>`;
+  const l = $("limpar");
+  if(l) l.onclick = () => { $("categoria").value = ""; $("nivel").value = ""; $("pesquisa").value = ""; mostrar(); };
+}
+["categoria","nivel"].forEach(id => $(id).addEventListener("change", mostrar));
+$("pesquisa").addEventListener("input", mostrar);
+mostrar();
+</script>
+</body>
+</html>
