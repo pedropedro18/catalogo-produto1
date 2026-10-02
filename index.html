@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Treino de Leitura</title>
 <style>
-:root{--bg:#f7f7f5;--card:#fff;--tx:#1d1d1b;--mut:#6b6b66;--ac:#2563eb;--ok:#15803d;--bad:#b91c1c;--bd:#e3e3df;
+:root{--bg:#f7f7f5;--card:#fff;--tx:#1d1d1b;--mut:#6b6b66;--ac:#2563eb;--ok:#15803d;--bad:#b91c1c;--wr:#b45309;--bd:#e3e3df;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161617;--card:#212123;--tx:#f0f0ee;--mut:#9a9a95;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171;--bd:#33333a}}
-:root[data-theme="dark"]{--bg:#161617;--card:#212123;--tx:#f0f0ee;--mut:#9a9a95;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171;--bd:#33333a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161617;--card:#212123;--tx:#f0f0ee;--mut:#9a9a95;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171;--wr:#fbbf24;--bd:#33333a}}
+:root[data-theme="dark"]{--bg:#161617;--card:#212123;--tx:#f0f0ee;--mut:#9a9a95;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171;--wr:#fbbf24;--bd:#33333a}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:640px;margin:0 auto;padding:16px}
@@ -19,11 +19,16 @@ button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(
 button.on,button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
 button.mic{width:100%;padding:16px;font-size:19px}
 textarea{width:100%;box-sizing:border-box;min-height:90px;font:inherit;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:10px}
-.sent{font-size:21px;line-height:1.7}
-.sent span{padding:0 2px;border-radius:4px}
-.ok{color:var(--ok)}.bad{color:var(--bad);text-decoration:underline wavy}
+.sent{font-size:21px;line-height:1.8}
+.sent span{padding:1px 3px;border-radius:5px}
+.sent.blur{filter:blur(7px);user-select:none}
+.ok{color:var(--ok)}
+.bad{color:var(--bad);text-decoration:underline wavy}
+.doubt{color:var(--wr);text-decoration:underline dotted}
+.cur{background:color-mix(in srgb,var(--ac) 22%,transparent)}
 .mut{color:var(--mut);font-size:15px}
 .hide{display:none}
+label.chk{display:flex;gap:8px;align-items:center;margin-top:12px}
 </style>
 </head>
 <body>
@@ -37,6 +42,12 @@ textarea{width:100%;box-sizing:border-box;min-height:90px;font:inherit;backgroun
     <button data-l="en-US">English</button>
     <button data-l="fr-FR">Français</button>
   </div>
+  <div class="mut" style="margin:14px 0 8px">Modo</div>
+  <div class="row" id="modes">
+    <button data-m="s" class="on">Frase inteira</button>
+    <button data-m="w">Palavra por palavra</button>
+  </div>
+  <label class="chk"><input type="checkbox" id="hear"> Ouça e repita (o texto fica escondido até você falar)</label>
   <div class="mut" style="margin:14px 0 6px">Texto (pode colar o seu)</div>
   <textarea id="txt"></textarea>
   <button class="pri" id="start" style="margin-top:12px;width:100%">Começar</button>
@@ -66,15 +77,16 @@ const SAMPLES={
  "fr-FR":"Le soleil s'est levé tôt ce matin-là. Les enfants ont couru dans le jardin. Il y avait des fleurs de toutes les couleurs."
 };
 const MSG={
- "pt-BR":{ok:"✅ Perfeito!",extra:"Palavras a mais: ",miss:"Em vermelho: palavras erradas ou esquecidas.",heard:"Ouvi: ",none:"Não entendi. Tente de novo.",right:"Acertou de primeira: "},
- "en-US":{ok:"✅ Perfect!",extra:"Extra words: ",miss:"In red: wrong or missed words.",heard:"I heard: ",none:"I didn't catch that. Try again.",right:"Right on first try: "},
- "fr-FR":{ok:"✅ Parfait !",extra:"Mots en trop : ",miss:"En rouge : mots faux ou oubliés.",heard:"J'ai entendu : ",none:"Je n'ai pas compris. Réessayez.",right:"Juste du premier coup : "}
+ "pt-BR":{ok:"✅ Perfeito!",doubt:"🟡 Quase. Em amarelo: o reconhecimento ficou em dúvida. Leia de novo, mais devagar.",miss:"Em vermelho: palavras erradas ou esquecidas.",heard:"Ouvi: ",alt:"Também poderia ser: ",conf:"Confiança: ",extra:"Palavras a mais: ",none:"Não entendi. Tente de novo.",right:"Acertou de primeira: ",mic:"🎤 Ler agora",micw:"🎤 Ler a palavra marcada",say:"🔊 Ouvir frase",listen:"🎙️ Ouvindo...",deny:"Permita o uso do microfone no navegador.",nosr:"Seu navegador não suporta reconhecimento de voz. Use o Chrome ou o Edge.",done:"✅ Frase completa!"},
+ "en-US":{ok:"✅ Perfect!",doubt:"🟡 Almost. In yellow: the recognizer wasn't sure. Read again, more slowly.",miss:"In red: wrong or missed words.",heard:"I heard: ",alt:"It could also be: ",conf:"Confidence: ",extra:"Extra words: ",none:"I didn't catch that. Try again.",right:"Right on first try: ",mic:"🎤 Read now",micw:"🎤 Read the marked word",say:"🔊 Hear sentence",listen:"🎙️ Listening...",deny:"Allow microphone access in your browser.",nosr:"Your browser doesn't support speech recognition. Use Chrome or Edge.",done:"✅ Sentence complete!"},
+ "fr-FR":{ok:"✅ Parfait !",doubt:"🟡 Presque. En jaune : la reconnaissance a hésité. Relisez, plus lentement.",miss:"En rouge : mots faux ou oubliés.",heard:"J'ai entendu : ",alt:"Cela pourrait aussi être : ",conf:"Confiance : ",extra:"Mots en trop : ",none:"Je n'ai pas compris. Réessayez.",right:"Juste du premier coup : ",mic:"🎤 Lire maintenant",micw:"🎤 Lire le mot surligné",say:"🔊 Écouter la phrase",listen:"🎙️ J'écoute...",deny:"Autorisez le micro dans le navigateur.",nosr:"Votre navigateur ne gère pas la reconnaissance vocale. Utilisez Chrome ou Edge.",done:"✅ Phrase terminée !"}
 };
 const $=id=>document.getElementById(id);
-let lang="pt-BR",frases=[],i=0,acertos=0,tentou=false;
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+let lang="pt-BR",wordMode=false,frases=[],i=0,acertos=0,tentou=false,alvo=[],st=[],toks=[],wi=0,revealed=false;
 
 const palavras=s=>(s.toLowerCase().match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu)||[]);
-const norm=w=>w.replace(/’/g,"'");
+const norm=w=>w.replace(/’/g,"'").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 
 function comparar(esp,ouv){
   const a=esp.map(norm),b=ouv.map(norm),n=a.length,m=b.length;
@@ -97,17 +109,39 @@ function setLang(l){
   document.documentElement.lang=l;
 }
 document.querySelectorAll("#langs button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
+document.querySelectorAll("#modes button").forEach(b=>b.onclick=()=>{
+  wordMode=b.dataset.m==="w";
+  document.querySelectorAll("#modes button").forEach(x=>x.classList.toggle("on",x===b));
+});
 setLang("pt-BR");
 
+function build(){
+  alvo=palavras(frases[i]);st=new Array(alvo.length).fill(null);wi=0;
+  let k=0;
+  toks=frases[i].split(/\s+/).map(w=>{const n=palavras(w).length;const o={w,a:k,n};k+=n;return o});
+}
+function draw(){
+  $("sent").className="sent"+($("hear").checked&&!revealed?" blur":"");
+  $("sent").innerHTML=toks.map(t=>{
+    let c="";
+    if(t.n){
+      const s=st.slice(t.a,t.a+t.n);
+      c=s.includes("bad")?"bad":s.includes("doubt")?"doubt":s.every(x=>x==="ok")?"ok":"";
+      if(wordMode&&wi>=t.a&&wi<t.a+t.n)c+=" cur";
+    }
+    return '<span class="'+c+'">'+esc(t.w)+'</span>';
+  }).join(" ");
+}
 function show(){
   if(i>=frases.length){
     $("play").classList.add("hide");$("end").classList.remove("hide");
     $("score").textContent=MSG[lang].right+acertos+"/"+frases.length;return;
   }
-  tentou=false;
+  tentou=false;revealed=false;build();
   $("prog").textContent=(i+1)+" / "+frases.length;
-  $("sent").textContent=frases[i];
-  $("res").innerHTML="";
+  $("mic").textContent=wordMode?MSG[lang].micw:MSG[lang].mic;
+  $("say").textContent=MSG[lang].say;
+  $("res").innerHTML="";draw();
 }
 $("start").onclick=()=>{
   frases=$("txt").value.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
@@ -123,41 +157,74 @@ $("say").onclick=()=>{
 
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 $("mic").onclick=()=>{
-  if(!SR){$("res").textContent="Seu navegador não suporta reconhecimento de voz. Use o Chrome ou o Edge.";return}
-  const r=new SR();r.lang=lang;r.interimResults=false;r.maxAlternatives=1;
-  $("mic").textContent="🎙️ Ouvindo...";
-  r.onresult=e=>avaliar(e.results[0][0].transcript);
-  r.onerror=e=>{$("res").textContent=(e.error==="not-allowed")?"Permita o uso do microfone no navegador.":MSG[lang].none};
-  r.onend=()=>{$("mic").textContent="🎤 Ler agora"};
+  const M=MSG[lang];
+  if(!SR){$("res").textContent=M.nosr;return}
+  const r=new SR();r.lang=lang;r.interimResults=false;r.maxAlternatives=5;
+  $("mic").textContent=M.listen;
+  r.onresult=e=>{
+    const alts=Array.from(e.results[0]).map(a=>({t:a.transcript,c:a.confidence}));
+    wordMode?avaliarPalavra(alts):avaliarFrase(alts);
+  };
+  r.onerror=e=>{$("res").textContent=(e.error==="not-allowed")?M.deny:M.none};
+  r.onend=()=>{$("mic").textContent=wordMode?M.micw:M.mic};
   try{r.start()}catch(e){}
 };
 
-function avaliar(ouvido){
+function infoOuvido(alts){
   const M=MSG[lang];
-  const esp=frases[i].split(/\s+/);
-  const alvo=palavras(frases[i]);
-  const {okA,extras}=comparar(alvo,palavras(ouvido));
-  let k=0;
-  const html=esp.map(w=>{
-    const n=palavras(w).length;
-    if(!n)return w;
-    let good=true;for(let j=0;j<n;j++)if(!okA[k+j])good=false;
-    k+=n;
-    return '<span class="'+(good?"ok":"bad")+'">'+w.replace(/</g,"&lt;")+'</span>';
-  }).join(" ");
-  const perfeito=okA.every(Boolean)&&!extras.length;
-  $("sent").innerHTML=html;
-  let out='<div class="mut">'+M.heard+ouvido.replace(/</g,"&lt;")+'</div>';
-  if(perfeito){
+  let o='<div class="mut">'+M.heard+esc(alts[0].t)+'</div>';
+  const outras=[...new Set(alts.slice(1).map(a=>a.t.trim()).filter(t=>t&&t.toLowerCase()!==alts[0].t.trim().toLowerCase()))].slice(0,2);
+  if(outras.length)o+='<div class="mut">'+M.alt+outras.map(esc).join(" / ")+'</div>';
+  if(alts[0].c>0)o+='<div class="mut">'+M.conf+Math.round(alts[0].c*100)+'%</div>';
+  return o;
+}
+function botaoProx(){
+  $("res").insertAdjacentHTML("beforeend",'<button class="pri" id="next" style="margin-top:8px">→</button>');
+  $("next").onclick=()=>{i++;show()};
+}
+
+function avaliarFrase(alts){
+  const M=MSG[lang];
+  const best=alts[0],outras=alts.slice(1).map(a=>new Set(palavras(a.t).map(norm)));
+  const {okA,extras}=comparar(alvo,palavras(best.t));
+  alvo.forEach((w,k)=>{
+    if(!okA[k])st[k]="bad";
+    else{
+      const apoio=outras.filter(s=>s.has(norm(w))).length;
+      st[k]=(outras.length>=2&&apoio<outras.length/2)?"doubt":"ok";
+    }
+  });
+  const temBad=st.includes("bad"),temDoubt=st.includes("doubt")||(best.c>0&&best.c<0.8);
+  revealed=true;draw();
+  let out=infoOuvido(alts);
+  if(!temBad&&!extras.length&&!temDoubt){
     if(!tentou)acertos++;
-    out+='<div class="ok" style="margin:6px 0">'+M.ok+'</div><button class="pri" id="next">→</button>';
-  }else{
-    tentou=true;
-    out+='<div class="mut" style="margin-top:6px">'+M.miss+'</div>';
-    if(extras.length)out+='<div class="mut">'+M.extra+extras.join(", ")+'</div>';
+    $("res").innerHTML=out+'<div class="ok" style="margin:6px 0">'+M.ok+'</div>';botaoProx();return;
   }
+  tentou=true;
+  out+=(!temBad&&!extras.length)?'<div class="mut" style="margin-top:6px">'+M.doubt+'</div>':'<div class="mut" style="margin-top:6px">'+M.miss+'</div>';
+  if(extras.length)out+='<div class="mut">'+M.extra+esc(extras.join(", "))+'</div>';
   $("res").innerHTML=out;
-  const nx=$("next");if(nx)nx.onclick=()=>{i++;show()};
+}
+
+function avaliarPalavra(alts){
+  const M=MSG[lang],alvoN=norm(alvo[wi]);
+  const naMelhor=palavras(alts[0].t).map(norm).includes(alvoN);
+  const emOutra=alts.slice(1).some(a=>palavras(a.t).map(norm).includes(alvoN));
+  let out=infoOuvido(alts);
+  if(naMelhor){
+    st[wi]="ok";wi++;
+    if(wi>=alvo.length){
+      if(!tentou)acertos++;
+      revealed=true;draw();
+      $("res").innerHTML=out+'<div class="ok" style="margin:6px 0">'+M.done+'</div>';botaoProx();return;
+    }
+  }else{
+    tentou=true;st[wi]=emOutra?"doubt":"bad";
+    out+='<div class="mut" style="margin-top:6px">'+(emOutra?M.doubt:M.miss)+'</div>';
+  }
+  revealed=wi>0||revealed;draw();
+  $("res").innerHTML=out;
 }
 </script>
 </body>
