@@ -1,119 +1,106 @@
+"""Catálogo de aulas de programação e criação de websites.
+
+Executar:  streamlit run code.py
+Ficheiros: code.py + style.css (na mesma pasta)
+
+Fonte de dados (por ordem):
+1. MySQL        -> se existir [mysql] em .streamlit/secrets.toml
+2. Google Sheets -> se existir [gsheets] em .streamlit/secrets.toml
+3. Lista local  -> AULAS_EXEMPLO (para testar)
 """
-Treino de leitura em voz alta: Português, English, Français.
+from pathlib import Path
 
-Instalação:
-    pip install SpeechRecognition pyaudio
+import pandas as pd
+import streamlit as st
 
-Uso:
-    python leitura.py              # escolhe o idioma e usa o texto de exemplo
-    python leitura.py meutexto.txt # escolhe o idioma e usa o seu arquivo
-"""
-import re
-import sys
-import difflib
-import speech_recognition as sr
+st.set_page_config(page_title="Aulas de Programação", page_icon="💻", layout="centered")
 
-IDIOMAS = {
-    "1": ("Português", "pt-BR",
-          "O sol nasceu cedo naquela manhã. As crianças correram para o jardim. "
-          "Havia flores de todas as cores."),
-    "2": ("English", "en-US",
-          "The sun rose early that morning. The children ran into the garden. "
-          "There were flowers of every color."),
-    "3": ("Français", "fr-FR",
-          "Le soleil s'est levé tôt ce matin-là. Les enfants ont couru dans le jardin. "
-          "Il y avait des fleurs de toutes les couleurs."),
-}
+COLUNAS = ["titulo", "categoria", "nivel", "duracao", "preco", "descricao"]
+
+AULAS_EXEMPLO = [
+    ("Python do zero", "Programação", "Iniciante", "8 aulas", 80, "Variáveis, ciclos, funções e primeiros programas."),
+    ("Python para automatizar tarefas", "Programação", "Intermédio", "6 aulas", 70, "Ficheiros, Excel, Google Sheets e pequenos scripts."),
+    ("Streamlit: apps web com Python", "Programação", "Intermédio", "6 aulas", 70, "Cria e publica apps online só com Python."),
+    ("Bases de dados com MySQL", "Programação", "Intermédio", "5 aulas", 60, "Tabelas, consultas SQL e ligação ao Python."),
+    ("HTML e CSS: o teu primeiro website", "Websites", "Iniciante", "8 aulas", 80, "Estrutura, estilos e design responsivo."),
+    ("JavaScript e React", "Websites", "Avançado", "10 aulas", 110, "Componentes, estado e publicação no Vercel."),
+]
 
 
-def escolher_idioma():
-    print("Escolha o idioma:")
-    for k, (nome, _, _) in IDIOMAS.items():
-        print(f"  {k} - {nome}")
-    while True:
-        op = input("Opção: ").strip()
-        if op in IDIOMAS:
-            return IDIOMAS[op]
+def carregar_css(caminho: str = "style.css") -> None:
+    css = Path(__file__).with_name(caminho)
+    if css.exists():
+        st.markdown(f"<style>{css.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
 
-def dividir_frases(texto):
-    frases = re.split(r"(?<=[.!?])\s+", texto.strip())
-    return [f.strip() for f in frases if f.strip()]
-
-
-def palavras(frase):
-    # trata apóstrofos (l'enfant, don't) como parte da palavra
-    return re.findall(r"\w+(?:['’]\w+)*", frase.lower())
-
-
-def comparar(esperado, falado):
-    a, b = palavras(esperado), palavras(falado)
-    problemas = []
-    for op, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b).get_opcodes():
-        if op == "replace":
-            problemas.append(f"❌ Disse '{' '.join(b[j1:j2])}' em vez de '{' '.join(a[i1:i2])}'")
-        elif op == "delete":
-            problemas.append(f"⚠️  Esqueceu: '{' '.join(a[i1:i2])}'")
-        elif op == "insert":
-            problemas.append(f"➕ Palavra a mais: '{' '.join(b[j1:j2])}'")
-    return problemas
-
-
-def ouvir(rec, mic, codigo):
-    with mic as fonte:
-        print("🎤 Pode ler...")
-        audio = rec.listen(fonte, phrase_time_limit=20)
+@st.cache_data(ttl=300)
+def carregar_aulas() -> pd.DataFrame:
     try:
-        return rec.recognize_google(audio, language=codigo)
-    except sr.UnknownValueError:
-        return ""
-    except sr.RequestError as e:
-        print(f"Erro no serviço de voz (precisa de internet): {e}")
-        return ""
+        if "mysql" in st.secrets:
+            import mysql.connector
+
+            ligacao = mysql.connector.connect(**st.secrets["mysql"])
+            df = pd.read_sql(f"SELECT {', '.join(COLUNAS)} FROM aulas", ligacao)
+            ligacao.close()
+            return df
+        if "gsheets" in st.secrets:
+            import gspread
+
+            cliente = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
+            folha = cliente.open_by_key(st.secrets["gsheets"]["sheet_id"]).sheet1
+            return pd.DataFrame(folha.get_all_records())[COLUNAS]
+    except Exception as erro:  # usa a lista local se a ligação falhar
+        st.warning(f"Não foi possível ler a base de dados ({erro}). A mostrar exemplos.")
+    return pd.DataFrame(AULAS_EXEMPLO, columns=COLUNAS)
 
 
-def main():
-    nome, codigo, texto = escolher_idioma()
-    if len(sys.argv) > 1:
-        with open(sys.argv[1], encoding="utf-8") as f:
-            texto = f.read()
-    print(f"\nIdioma: {nome}")
-
-    rec = sr.Recognizer()
-    mic = sr.Microphone()
-    with mic as fonte:
-        rec.adjust_for_ambient_noise(fonte, duration=1)
-
-    frases = dividir_frases(texto)
-    acertos = 0
-
-    for n, frase in enumerate(frases, 1):
-        while True:
-            print(f"\n[{n}/{len(frases)}] {frase}")
-            cmd = input("Enter = ler | p = pular | s = sair: ").strip().lower()
-            if cmd == "s":
-                print(f"\nAcertou de primeira: {acertos}/{n - 1}")
-                return
-            if cmd == "p":
-                break
-
-            falado = ouvir(rec, mic, codigo)
-            if not falado:
-                print("Não entendi. Tente de novo.")
-                continue
-
-            print(f"Ouvi: {falado}")
-            problemas = comparar(frase, falado)
-            if not problemas:
-                print("✅ Perfeito!")
-                acertos += 1
-                break
-            for p in problemas:
-                print(p)
-            print("Vamos tentar de novo.")
-
-    print(f"\nFim! Frases certas: {acertos}/{len(frases)}")
+def cartao(aula: pd.Series) -> str:
+    classe = "aula web" if aula["categoria"] == "Websites" else "aula"
+    return f"""
+    <div class="{classe}">
+      <h3>{aula['titulo']}</h3>
+      <p>{aula['descricao']}</p>
+      <div class="meta">
+        <span>{aula['categoria']}</span>
+        <span>{aula['nivel']}</span>
+        <span>{aula['duracao']}</span>
+        <span class="preco">{aula['preco']} €</span>
+      </div>
+    </div>
+    """
 
 
-if __name__ == "__main__":
-    main()
+carregar_css()
+
+st.markdown(
+    """
+    <div class="hero">
+      <h1>Aulas de programação e websites</h1>
+      <p>Escolhe a aula, o nível e o formato que te servem. Aprende a programar e a publicar os teus projetos.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+aulas = carregar_aulas()
+
+col1, col2 = st.columns(2)
+categoria = col1.selectbox("Categoria", ["Todas"] + sorted(aulas["categoria"].unique()))
+nivel = col2.selectbox("Nível", ["Todos"] + sorted(aulas["nivel"].unique()))
+pesquisa = st.text_input("Pesquisar aula", placeholder="Ex.: Python, HTML, MySQL")
+
+filtradas = aulas
+if categoria != "Todas":
+    filtradas = filtradas[filtradas["categoria"] == categoria]
+if nivel != "Todos":
+    filtradas = filtradas[filtradas["nivel"] == nivel]
+if pesquisa:
+    texto = filtradas["titulo"] + " " + filtradas["descricao"]
+    filtradas = filtradas[texto.str.contains(pesquisa, case=False, na=False)]
+
+st.caption(f"{len(filtradas)} aula(s) encontrada(s)")
+
+if filtradas.empty:
+    st.info("Nenhuma aula encontrada. Limpa a pesquisa ou muda os filtros.")
+for _, aula in filtradas.iterrows():
+    st.markdown(cartao(aula), unsafe_allow_html=True)

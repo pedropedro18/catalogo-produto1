@@ -1,231 +1,93 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Treino de Leitura</title>
-<style>
-:root{--bg:#f7f7f5;--card:#fff;--tx:#1d1d1b;--mut:#6b6b66;--ac:#2563eb;--ok:#15803d;--bad:#b91c1c;--wr:#b45309;--bd:#e3e3df;
-box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161617;--card:#212123;--tx:#f0f0ee;--mut:#9a9a95;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171;--wr:#fbbf24;--bd:#33333a}}
-:root[data-theme="dark"]{--bg:#161617;--card:#212123;--tx:#f0f0ee;--mut:#9a9a95;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171;--wr:#fbbf24;--bd:#33333a}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
-main{max-width:640px;margin:0 auto;padding:16px}
-h1{font-size:22px;margin:8px 0 14px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:14px}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:10px 14px;border-radius:10px;cursor:pointer}
-button.on,button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
-button.mic{width:100%;padding:16px;font-size:19px}
-textarea{width:100%;box-sizing:border-box;min-height:90px;font:inherit;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:10px}
-.sent{font-size:21px;line-height:1.8}
-.sent span{padding:1px 3px;border-radius:5px}
-.sent.blur{filter:blur(7px);user-select:none}
-.ok{color:var(--ok)}
-.bad{color:var(--bad);text-decoration:underline wavy}
-.doubt{color:var(--wr);text-decoration:underline dotted}
-.cur{background:color-mix(in srgb,var(--ac) 22%,transparent)}
-.mut{color:var(--mut);font-size:15px}
-.hide{display:none}
-label.chk{display:flex;gap:8px;align-items:center;margin-top:12px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aulas de Programação</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main>
-<h1>🎤 Treino de Leitura</h1>
+  <header class="topo">
+    <h1>Aulas de Programação</h1>
+    <p class="subtitulo">Programação e criação de websites, do zero ao primeiro projeto online.</p>
+    <div class="controlos">
+      <input type="search" id="pesquisa" placeholder="Pesquisar aula" aria-label="Pesquisar aula">
+      <select id="categoria" aria-label="Filtrar por área">
+        <option value="">Todas as áreas</option>
+      </select>
+    </div>
+  </header>
 
-<div id="setup" class="card">
-  <div class="mut" style="margin-bottom:8px">Idioma</div>
-  <div class="row" id="langs">
-    <button data-l="pt-BR" class="on">Português</button>
-    <button data-l="en-US">English</button>
-    <button data-l="fr-FR">Français</button>
-  </div>
-  <div class="mut" style="margin:14px 0 8px">Modo</div>
-  <div class="row" id="modes">
-    <button data-m="s" class="on">Frase inteira</button>
-    <button data-m="w">Palavra por palavra</button>
-  </div>
-  <label class="chk"><input type="checkbox" id="hear"> Ouça e repita (o texto fica escondido até você falar)</label>
-  <div class="mut" style="margin:14px 0 6px">Texto (pode colar o seu)</div>
-  <textarea id="txt"></textarea>
-  <button class="pri" id="start" style="margin-top:12px;width:100%">Começar</button>
-</div>
+  <main>
+    <p id="contagem" class="contagem"></p>
+    <section id="lista" class="grelha"></section>
+    <p id="vazio" class="vazio" hidden>Nenhuma aula encontrada. Experimenta outra pesquisa ou área.</p>
+  </main>
 
-<div id="play" class="card hide">
-  <div class="mut" id="prog"></div>
-  <div class="sent" id="sent"></div>
-  <div class="row" style="margin:10px 0">
-    <button id="say">🔊 Ouvir frase</button>
-    <button id="skip">Pular</button>
-  </div>
-  <button class="mic pri" id="mic">🎤 Ler agora</button>
-  <div id="res" style="margin-top:12px"></div>
-</div>
+  <footer class="rodape">
+    <p>&copy; 2026 Aulas de Programação</p>
+  </footer>
 
-<div id="end" class="card hide">
-  <div id="score" style="font-size:20px"></div>
-  <button class="pri" id="again" style="margin-top:12px">Recomeçar</button>
-</div>
-</main>
+  <script>
+    // Edita esta lista para colocar as tuas aulas
+    const aulas = [
+      { nome: "Python para Iniciantes", categoria: "Python", nivel: "Iniciante", duracao: "8 aulas", descricao: "Variáveis, condições, ciclos e funções com exercícios práticos." },
+      { nome: "Python Intermédio", categoria: "Python", nivel: "Intermédio", duracao: "8 aulas", descricao: "Listas, dicionários, ficheiros e pequenos projetos." },
+      { nome: "HTML e CSS", categoria: "Websites", nivel: "Iniciante", duracao: "6 aulas", descricao: "Cria a estrutura e o estilo de uma página web." },
+      { nome: "JavaScript Básico", categoria: "Websites", nivel: "Intermédio", duracao: "8 aulas", descricao: "Torna as páginas interativas com eventos e DOM." },
+      { nome: "Criar um Website Completo", categoria: "Websites", nivel: "Intermédio", duracao: "10 aulas", descricao: "Do desenho da página até à publicação online." },
+      { nome: "Apps com Streamlit", categoria: "Python", nivel: "Intermédio", duracao: "5 aulas", descricao: "Cria aplicações web em Python e publica-as." },
+      { nome: "Bases de Dados MySQL", categoria: "Dados", nivel: "Intermédio", duracao: "6 aulas", descricao: "Tabelas, consultas SQL e ligação ao Python." },
+      { nome: "Git e GitHub", categoria: "Ferramentas", nivel: "Iniciante", duracao: "3 aulas", descricao: "Guarda versões do código e publica os teus projetos." }
+    ];
 
-<script>
-const SAMPLES={
- "pt-BR":"O sol nasceu cedo naquela manhã. As crianças correram para o jardim. Havia flores de todas as cores.",
- "en-US":"The sun rose early that morning. The children ran into the garden. There were flowers of every color.",
- "fr-FR":"Le soleil s'est levé tôt ce matin-là. Les enfants ont couru dans le jardin. Il y avait des fleurs de toutes les couleurs."
-};
-const MSG={
- "pt-BR":{ok:"✅ Perfeito!",doubt:"🟡 Quase. Em amarelo: o reconhecimento ficou em dúvida. Leia de novo, mais devagar.",miss:"Em vermelho: palavras erradas ou esquecidas.",heard:"Ouvi: ",alt:"Também poderia ser: ",conf:"Confiança: ",extra:"Palavras a mais: ",none:"Não entendi. Tente de novo.",right:"Acertou de primeira: ",mic:"🎤 Ler agora",micw:"🎤 Ler a palavra marcada",say:"🔊 Ouvir frase",listen:"🎙️ Ouvindo...",deny:"Permita o uso do microfone no navegador.",nosr:"Seu navegador não suporta reconhecimento de voz. Use o Chrome ou o Edge.",done:"✅ Frase completa!"},
- "en-US":{ok:"✅ Perfect!",doubt:"🟡 Almost. In yellow: the recognizer wasn't sure. Read again, more slowly.",miss:"In red: wrong or missed words.",heard:"I heard: ",alt:"It could also be: ",conf:"Confidence: ",extra:"Extra words: ",none:"I didn't catch that. Try again.",right:"Right on first try: ",mic:"🎤 Read now",micw:"🎤 Read the marked word",say:"🔊 Hear sentence",listen:"🎙️ Listening...",deny:"Allow microphone access in your browser.",nosr:"Your browser doesn't support speech recognition. Use Chrome or Edge.",done:"✅ Sentence complete!"},
- "fr-FR":{ok:"✅ Parfait !",doubt:"🟡 Presque. En jaune : la reconnaissance a hésité. Relisez, plus lentement.",miss:"En rouge : mots faux ou oubliés.",heard:"J'ai entendu : ",alt:"Cela pourrait aussi être : ",conf:"Confiance : ",extra:"Mots en trop : ",none:"Je n'ai pas compris. Réessayez.",right:"Juste du premier coup : ",mic:"🎤 Lire maintenant",micw:"🎤 Lire le mot surligné",say:"🔊 Écouter la phrase",listen:"🎙️ J'écoute...",deny:"Autorisez le micro dans le navigateur.",nosr:"Votre navigateur ne gère pas la reconnaissance vocale. Utilisez Chrome ou Edge.",done:"✅ Phrase terminée !"}
-};
-const $=id=>document.getElementById(id);
-const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
-let lang="pt-BR",wordMode=false,frases=[],i=0,acertos=0,tentou=false,alvo=[],st=[],toks=[],wi=0,revealed=false;
+    const lista = document.getElementById("lista");
+    const pesquisa = document.getElementById("pesquisa");
+    const categoria = document.getElementById("categoria");
+    const contagem = document.getElementById("contagem");
+    const vazio = document.getElementById("vazio");
 
-const palavras=s=>(s.toLowerCase().match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu)||[]);
-const norm=w=>w.replace(/’/g,"'").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    [...new Set(aulas.map(a => a.categoria))].sort().forEach(c => {
+      const opcao = document.createElement("option");
+      opcao.value = c;
+      opcao.textContent = c;
+      categoria.appendChild(opcao);
+    });
 
-function comparar(esp,ouv){
-  const a=esp.map(norm),b=ouv.map(norm),n=a.length,m=b.length;
-  const d=Array.from({length:n+1},()=>new Array(m+1).fill(0));
-  for(let x=n-1;x>=0;x--)for(let y=m-1;y>=0;y--)
-    d[x][y]=a[x]===b[y]?d[x+1][y+1]+1:Math.max(d[x+1][y],d[x][y+1]);
-  const okA=new Array(n).fill(false),okB=new Array(m).fill(false);
-  let x=0,y=0;
-  while(x<n&&y<m){
-    if(a[x]===b[y]){okA[x]=okB[y]=true;x++;y++}
-    else if(d[x+1][y]>=d[x][y+1])x++;else y++;
-  }
-  return {okA,extras:ouv.filter((_,k)=>!okB[k])};
-}
+    function mostrar() {
+      const texto = pesquisa.value.trim().toLowerCase();
+      const cat = categoria.value;
 
-function setLang(l){
-  lang=l;
-  document.querySelectorAll("#langs button").forEach(b=>b.classList.toggle("on",b.dataset.l===l));
-  $("txt").value=SAMPLES[l];
-  document.documentElement.lang=l;
-}
-document.querySelectorAll("#langs button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
-document.querySelectorAll("#modes button").forEach(b=>b.onclick=()=>{
-  wordMode=b.dataset.m==="w";
-  document.querySelectorAll("#modes button").forEach(x=>x.classList.toggle("on",x===b));
-});
-setLang("pt-BR");
+      const filtradas = aulas.filter(a =>
+        (!cat || a.categoria === cat) &&
+        (a.nome.toLowerCase().includes(texto) || a.descricao.toLowerCase().includes(texto))
+      );
 
-function build(){
-  alvo=palavras(frases[i]);st=new Array(alvo.length).fill(null);wi=0;
-  let k=0;
-  toks=frases[i].split(/\s+/).map(w=>{const n=palavras(w).length;const o={w,a:k,n};k+=n;return o});
-}
-function draw(){
-  $("sent").className="sent"+($("hear").checked&&!revealed?" blur":"");
-  $("sent").innerHTML=toks.map(t=>{
-    let c="";
-    if(t.n){
-      const s=st.slice(t.a,t.a+t.n);
-      c=s.includes("bad")?"bad":s.includes("doubt")?"doubt":s.every(x=>x==="ok")?"ok":"";
-      if(wordMode&&wi>=t.a&&wi<t.a+t.n)c+=" cur";
+      lista.innerHTML = "";
+      filtradas.forEach(a => {
+        const cartao = document.createElement("article");
+        cartao.className = "cartao";
+        cartao.innerHTML = `
+          <div class="imagem" aria-hidden="true">&lt;/&gt;</div>
+          <div class="info">
+            <span class="etiqueta">${a.categoria}</span>
+            <h2>${a.nome}</h2>
+            <p>${a.descricao}</p>
+            <div class="meta">
+              <span>${a.nivel}</span>
+              <span>${a.duracao}</span>
+            </div>
+          </div>`;
+        lista.appendChild(cartao);
+      });
+
+      contagem.textContent = filtradas.length + (filtradas.length === 1 ? " aula" : " aulas");
+      vazio.hidden = filtradas.length > 0;
     }
-    return '<span class="'+c+'">'+esc(t.w)+'</span>';
-  }).join(" ");
-}
-function show(){
-  if(i>=frases.length){
-    $("play").classList.add("hide");$("end").classList.remove("hide");
-    $("score").textContent=MSG[lang].right+acertos+"/"+frases.length;return;
-  }
-  tentou=false;revealed=false;build();
-  $("prog").textContent=(i+1)+" / "+frases.length;
-  $("mic").textContent=wordMode?MSG[lang].micw:MSG[lang].mic;
-  $("say").textContent=MSG[lang].say;
-  $("res").innerHTML="";draw();
-}
-$("start").onclick=()=>{
-  frases=$("txt").value.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
-  if(!frases.length)return;
-  i=0;acertos=0;
-  $("setup").classList.add("hide");$("play").classList.remove("hide");show();
-};
-$("again").onclick=()=>{$("end").classList.add("hide");$("setup").classList.remove("hide")};
-$("skip").onclick=()=>{i++;show()};
-$("say").onclick=()=>{
-  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(frases[i]);u.lang=lang;speechSynthesis.speak(u)}catch(e){}
-};
 
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-$("mic").onclick=()=>{
-  const M=MSG[lang];
-  if(!SR){$("res").textContent=M.nosr;return}
-  const r=new SR();r.lang=lang;r.interimResults=false;r.maxAlternatives=5;
-  $("mic").textContent=M.listen;
-  r.onresult=e=>{
-    const alts=Array.from(e.results[0]).map(a=>({t:a.transcript,c:a.confidence}));
-    wordMode?avaliarPalavra(alts):avaliarFrase(alts);
-  };
-  r.onerror=e=>{$("res").textContent=(e.error==="not-allowed")?M.deny:M.none};
-  r.onend=()=>{$("mic").textContent=wordMode?M.micw:M.mic};
-  try{r.start()}catch(e){}
-};
-
-function infoOuvido(alts){
-  const M=MSG[lang];
-  let o='<div class="mut">'+M.heard+esc(alts[0].t)+'</div>';
-  const outras=[...new Set(alts.slice(1).map(a=>a.t.trim()).filter(t=>t&&t.toLowerCase()!==alts[0].t.trim().toLowerCase()))].slice(0,2);
-  if(outras.length)o+='<div class="mut">'+M.alt+outras.map(esc).join(" / ")+'</div>';
-  if(alts[0].c>0)o+='<div class="mut">'+M.conf+Math.round(alts[0].c*100)+'%</div>';
-  return o;
-}
-function botaoProx(){
-  $("res").insertAdjacentHTML("beforeend",'<button class="pri" id="next" style="margin-top:8px">→</button>');
-  $("next").onclick=()=>{i++;show()};
-}
-
-function avaliarFrase(alts){
-  const M=MSG[lang];
-  const best=alts[0],outras=alts.slice(1).map(a=>new Set(palavras(a.t).map(norm)));
-  const {okA,extras}=comparar(alvo,palavras(best.t));
-  alvo.forEach((w,k)=>{
-    if(!okA[k])st[k]="bad";
-    else{
-      const apoio=outras.filter(s=>s.has(norm(w))).length;
-      st[k]=(outras.length>=2&&apoio<outras.length/2)?"doubt":"ok";
-    }
-  });
-  const temBad=st.includes("bad"),temDoubt=st.includes("doubt")||(best.c>0&&best.c<0.8);
-  revealed=true;draw();
-  let out=infoOuvido(alts);
-  if(!temBad&&!extras.length&&!temDoubt){
-    if(!tentou)acertos++;
-    $("res").innerHTML=out+'<div class="ok" style="margin:6px 0">'+M.ok+'</div>';botaoProx();return;
-  }
-  tentou=true;
-  out+=(!temBad&&!extras.length)?'<div class="mut" style="margin-top:6px">'+M.doubt+'</div>':'<div class="mut" style="margin-top:6px">'+M.miss+'</div>';
-  if(extras.length)out+='<div class="mut">'+M.extra+esc(extras.join(", "))+'</div>';
-  $("res").innerHTML=out;
-}
-
-function avaliarPalavra(alts){
-  const M=MSG[lang],alvoN=norm(alvo[wi]);
-  const naMelhor=palavras(alts[0].t).map(norm).includes(alvoN);
-  const emOutra=alts.slice(1).some(a=>palavras(a.t).map(norm).includes(alvoN));
-  let out=infoOuvido(alts);
-  if(naMelhor){
-    st[wi]="ok";wi++;
-    if(wi>=alvo.length){
-      if(!tentou)acertos++;
-      revealed=true;draw();
-      $("res").innerHTML=out+'<div class="ok" style="margin:6px 0">'+M.done+'</div>';botaoProx();return;
-    }
-  }else{
-    tentou=true;st[wi]=emOutra?"doubt":"bad";
-    out+='<div class="mut" style="margin-top:6px">'+(emOutra?M.doubt:M.miss)+'</div>';
-  }
-  revealed=wi>0||revealed;draw();
-  $("res").innerHTML=out;
-}
-</script>
+    pesquisa.addEventListener("input", mostrar);
+    categoria.addEventListener("change", mostrar);
+    mostrar();
+  </script>
 </body>
 </html>
